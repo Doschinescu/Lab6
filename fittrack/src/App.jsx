@@ -1,9 +1,14 @@
 import { useState, useEffect } from 'react';
 import WorkoutForm from './components/WorkoutForm';
 import WorkoutList from './components/WorkoutList';
+import {
+  getAllWorkouts,
+  addWorkout,
+  deleteWorkout,
+  updateWorkout,
+} from './utils/db';
 import './App.css';
 
-const LOCAL_STORAGE_WORKOUTS_KEY = 'workout-tracker-data';
 const LOCAL_STORAGE_THEME_KEY = 'workout-tracker-theme';
 
 function App() {
@@ -11,16 +16,16 @@ function App() {
   const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
-    const storedWorkouts = localStorage.getItem(LOCAL_STORAGE_WORKOUTS_KEY);
-    if (storedWorkouts) setWorkouts(JSON.parse(storedWorkouts));
+    const fetchWorkouts = async () => {
+      const stored = await getAllWorkouts();
+      setWorkouts(stored);
+    };
+
+    fetchWorkouts();
 
     const storedTheme = localStorage.getItem(LOCAL_STORAGE_THEME_KEY);
     if (storedTheme) setDarkMode(storedTheme === 'dark');
   }, []);
-
-  useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_WORKOUTS_KEY, JSON.stringify(workouts));
-  }, [workouts]);
 
   useEffect(() => {
     if (darkMode) {
@@ -32,25 +37,41 @@ function App() {
     }
   }, [darkMode]);
 
-  const handleAddWorkout = (workout) => {
-    setWorkouts([...workouts, workout]);
+  const handleAddWorkout = async (workout) => {
+    await addWorkout(workout);
+    setWorkouts((prev) => [...prev, workout]);
   };
 
-  const handleLikeWorkout = (id) => {
-    setWorkouts((prev) =>
-      prev.map((w) => (w.id === id ? { ...w, liked: !w.liked } : w))
+  const handleLikeWorkout = async (id) => {
+    const updated = workouts.map((w) =>
+      w.id === id ? { ...w, liked: !w.liked } : w
     );
+    const workoutToUpdate = updated.find((w) => w.id === id);
+    await updateWorkout(workoutToUpdate);
+    setWorkouts(updated);
   };
 
-  const handleDeleteWorkout = (id) => {
+  const handleDeleteWorkout = async (id) => {
+    await deleteWorkout(id);
     setWorkouts((prev) => prev.filter((w) => w.id !== id));
   };
 
   return (
     <div className="App">
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <header
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '1rem',
+        }}
+      >
         <h1>🏋️ Workout Tracker</h1>
-        <button onClick={() => setDarkMode(!darkMode)} style={{ cursor: 'pointer' }}>
+        <button
+          onClick={() => setDarkMode(!darkMode)}
+          style={{ cursor: 'pointer' }}
+          aria-label="Toggle dark mode"
+        >
           {darkMode ? '🌞 Light Mode' : '🌙 Dark Mode'}
         </button>
       </header>
