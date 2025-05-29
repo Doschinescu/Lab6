@@ -1,35 +1,68 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState, useEffect } from 'react';
+import WorkoutForm from './components/WorkoutForm';
+import WorkoutList from './components/WorkoutList';
+import './App.css';
+
+const LOCAL_STORAGE_WORKOUTS_KEY = 'workout-tracker-data';
+const LOCAL_STORAGE_THEME_KEY = 'workout-tracker-theme';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [workouts, setWorkouts] = useState([]);
+  const [darkMode, setDarkMode] = useState(false);
+
+  useEffect(() => {
+    const storedWorkouts = localStorage.getItem(LOCAL_STORAGE_WORKOUTS_KEY);
+    if (storedWorkouts) setWorkouts(JSON.parse(storedWorkouts));
+
+    const storedTheme = localStorage.getItem(LOCAL_STORAGE_THEME_KEY);
+    if (storedTheme) setDarkMode(storedTheme === 'dark');
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(LOCAL_STORAGE_WORKOUTS_KEY, JSON.stringify(workouts));
+  }, [workouts]);
+
+  useEffect(() => {
+    if (darkMode) {
+      document.body.classList.add('dark');
+      localStorage.setItem(LOCAL_STORAGE_THEME_KEY, 'dark');
+    } else {
+      document.body.classList.remove('dark');
+      localStorage.setItem(LOCAL_STORAGE_THEME_KEY, 'light');
+    }
+  }, [darkMode]);
+
+  const handleAddWorkout = (workout) => {
+    setWorkouts([...workouts, workout]);
+  };
+
+  const handleLikeWorkout = (id) => {
+    setWorkouts((prev) =>
+      prev.map((w) => (w.id === id ? { ...w, liked: !w.liked } : w))
+    );
+  };
+
+  const handleDeleteWorkout = (id) => {
+    setWorkouts((prev) => prev.filter((w) => w.id !== id));
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
+    <div className="App">
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1>🏋️ Workout Tracker</h1>
+        <button onClick={() => setDarkMode(!darkMode)} style={{ cursor: 'pointer' }}>
+          {darkMode ? '🌞 Light Mode' : '🌙 Dark Mode'}
         </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+      </header>
+
+      <WorkoutForm onAddWorkout={handleAddWorkout} />
+      <WorkoutList
+        workouts={workouts}
+        onLike={handleLikeWorkout}
+        onDelete={handleDeleteWorkout}
+      />
+    </div>
+  );
 }
 
-export default App
+export default App;
